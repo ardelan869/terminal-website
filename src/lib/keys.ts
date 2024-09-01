@@ -1,4 +1,3 @@
-// TODO: remove & hooks if not needed
 import { useEvent } from '@/lib/hooks';
 
 export const useKeyEvent = (

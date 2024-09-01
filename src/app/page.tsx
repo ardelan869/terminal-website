@@ -1,19 +1,21 @@
 'use client';
 
-import Command, {
-	CommandContent,
-	CommandLine,
-} from '@/components/home/command';
-
 import {
 	type FormEvent,
 	type KeyboardEvent,
 	useRef,
 	useState,
 	useEffect,
+	useCallback,
 } from 'react';
 
+import Command, {
+	CommandContent,
+	CommandLine,
+} from '@/components/home/command';
+
 import { setTextRange } from '@/lib/utils';
+import { getMatchingCommand } from '@/config/commands';
 
 export default function Home() {
 	const inputRef = useRef<HTMLSpanElement>(null);
@@ -26,87 +28,95 @@ export default function Home() {
 	const [messages, setMessages] = useState<string[]>([]);
 	const [messageIndex, setMessageIndex] = useState(-1);
 
-	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
-		e.preventDefault();
+	const handleInput = useCallback(
+		(e: FormEvent<HTMLSpanElement>) => {
+			e.preventDefault();
 
-		setContent(e.currentTarget.textContent || '');
-	};
+			setContent(e.currentTarget.textContent || '');
+		},
+		[setContent],
+	);
 
-	const addCommand = (content?: string | null) => {
-		if (typeof content !== 'string') return;
+	const sendMessage = useCallback(
+		(content?: string | null) => {
+			if (typeof content !== 'string') return;
 
-		messages.push(content);
+			const contentSplit = content.split(' ');
+			const commandName = contentSplit[0];
+			const command = getMatchingCommand(commandName);
 
-		setMessages([...messages]);
-		setContent('');
-	};
+			if (content.length) {
+				messages.push(content);
+				setMessages([...messages]);
+			}
 
-	const handleKeyDown = (e: KeyboardEvent<HTMLSpanElement>) => {
-		if (timeoutRef.current) clearTimeout(timeoutRef.current);
+			setContent('');
 
-		timeoutRef.current = setTimeout(() => {
-			pauseCaretAnim(false);
-		}, 500);
+			if (command)
+				command.callback({
+					args: contentSplit.slice(1),
+					setMessages,
+				});
+		},
+		[messages, setMessages, setContent],
+	);
 
-		// moveOldMessageIndex(up: boolean) {
-		//   if (up && this.oldMessages.length > this.oldMessagesIndex + 1) {
-		//     this.oldMessagesIndex += 1;
-		//     this.message = this.oldMessages[this.oldMessagesIndex];
-		//   } else if (!up && this.oldMessagesIndex - 1 >= 0) {
-		//     this.oldMessagesIndex -= 1;
-		//     this.message = this.oldMessages[this.oldMessagesIndex];
-		//   } else if (!up && this.oldMessagesIndex - 1 === -1) {
-		//     this.oldMessagesIndex = -1;
-		//     this.message = "";
-		//   }
-		// },
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent<HTMLSpanElement>) => {
+			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-		pauseCaretAnim(true);
+			timeoutRef.current = setTimeout(() => {
+				pauseCaretAnim(false);
+			}, 500);
 
-		switch (e.key) {
-			case 'Enter':
-				e.preventDefault();
+			pauseCaretAnim(true);
 
-				addCommand(e.currentTarget.textContent);
-				setMessageIndex(-1);
-				break;
-			case 'Escape':
-				e.preventDefault();
+			switch (e.key) {
+				case 'Enter':
+					e.preventDefault();
 
-				setContent('');
-				setMessageIndex(-1);
-				break;
-			case 'ArrowUp':
-				e.preventDefault();
-
-				if (messages.length === 0) return;
-
-				if (messages.length > messageIndex + 1) {
-					setContent(
-						messages[messages.length - 1 - (messageIndex + 1)],
-					);
-					setMessageIndex((idx) => idx + 1);
-				}
-
-				break;
-			case 'ArrowDown':
-				e.preventDefault();
-
-				if (messages.length === 0) return;
-
-				if (messageIndex - 1 >= 0) {
-					setContent(
-						messages[messages.length - 1 - (messageIndex - 1)],
-					);
-					setMessageIndex((idx) => idx - 1);
-				} else if (messageIndex - 1 < 0) {
+					sendMessage(e.currentTarget.textContent);
 					setMessageIndex(-1);
-					setContent('');
-				}
+					break;
+				case 'Escape':
+					e.preventDefault();
 
-				break;
-		}
-	};
+					setContent('');
+					setMessageIndex(-1);
+					break;
+				case 'ArrowUp':
+					e.preventDefault();
+
+					if (messages.length === 0) return;
+
+					if (messages.length > messageIndex + 1) {
+						setContent(
+							messages[messages.length - 1 - (messageIndex + 1)],
+						);
+						setMessageIndex((idx) => idx + 1);
+					}
+
+					break;
+				case 'ArrowDown':
+					e.preventDefault();
+
+					if (messages.length === 0) return;
+
+					if (messageIndex - 1 >= 0) {
+						setContent(
+							messages[messages.length - 1 - (messageIndex - 1)],
+						);
+						setMessageIndex((idx) => idx - 1);
+					} else if (messageIndex - 1 < 0) {
+						setMessageIndex(-1);
+						setContent('');
+					}
+
+					break;
+			}
+		},
+		[messages, messageIndex, setContent, setMessageIndex, sendMessage],
+	);
 
 	useEffect(() => {
 		if (!inputRef.current) return;
@@ -121,7 +131,12 @@ export default function Home() {
 		<main className="h-full">
 			<div className="max-h-full overflow-y-scroll flex flex-col text-lg">
 				{messages.map((message, i) => (
-					<Command key={i} line={i + 1} message={message} />
+					<Command key={i}>
+						<CommandLine>{i + 1}</CommandLine>
+						<CommandContent
+							dangerouslySetInnerHTML={{ __html: message }}
+						/>
+					</Command>
 				))}
 
 				<Command onClick={() => inputRef.current?.focus()}>
@@ -138,7 +153,7 @@ export default function Home() {
 					/>
 					{caretVisible && (
 						<div
-							className="w-2 h-full bg-accent animate-blink"
+							className="w-2 h-7 bg-accent animate-blink"
 							style={{
 								animationPlayState: caretAnimPaused
 									? 'paused'
