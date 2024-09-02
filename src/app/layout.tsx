@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 
 import { ThemeProvider } from 'next-themes';
-
 import { Geiger } from '@/provider/Geiger';
+
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/react';
 
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -55,6 +57,8 @@ export default async function RootLayout({
 			<body
 				className={`${GeistSans.variable} ${GeistMono.variable} selection:bg-accent selection:text-foreground font-mono antialiased w-full h-full min-h-screen`}
 			>
+				<Analytics />
+				<SpeedInsights />
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="system"
