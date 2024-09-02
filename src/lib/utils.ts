@@ -43,6 +43,9 @@ export function generateKeywords() {
 		EMAIL,
 		GUI_URL,
 		SEO.description,
+		SEO.firstName,
+		SEO.lastName,
+		SEO.fullName,
 		...SEO.keywords,
 	]) {
 		keywords.push(keyword);
