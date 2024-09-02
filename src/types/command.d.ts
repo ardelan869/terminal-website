@@ -1,7 +1,8 @@
 type CommandCallback = (props: {
 	args: string[];
 	setMessages: React.Dispatch<React.SetStateAction<string[]>>;
-}) => void;
+	addMessage: (message: string) => void;
+}) => void | Promise<void>;
 
 interface Command {
 	name: string;

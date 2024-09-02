@@ -1,5 +1,8 @@
 interface PinnedRepo {
+	author: string;
 	name: string;
-	description?: string;
-	url: string;
+	description: string;
+	language: string;
+	stars: number;
+	forks: number;
 }

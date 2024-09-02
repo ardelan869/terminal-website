@@ -65,10 +65,10 @@ const config = {
 			keyframes: {
 				blink: {
 					'0%, 49%': {
-						opacity: '1',
+						opacity: '0',
 					},
 					'50%, 100%': {
-						opacity: '0',
+						opacity: '1',
 					},
 				},
 			},
